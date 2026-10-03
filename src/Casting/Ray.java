@@ -188,5 +188,11 @@ public class Ray {
         drawLine(Math.round(startX), Math.round(startY), Math.round(endX), Math.round(endY), lineColor);
     }
 
+    public float getDirX() {
+        return (float) Math.cos(direction);
+    }
 
+    public float getDirY() {
+        return (float) Math.sin(direction);
+    }
 }

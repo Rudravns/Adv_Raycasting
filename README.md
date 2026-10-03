@@ -1,6 +1,6 @@
 # Advanced Raycasting
 
-A Java raycasting project built with Gradle and [Jaylib](https://github.com/electronstudio/jaylib), a Java binding for raylib. The project includes a tile-based map, player movement and wall collision, a minimap/2D map view, and ray-based wall rendering.
+A Java raycasting project built with Gradle and [Jaylib](https://github.com/electronstudio/jaylib), a Java binding for raylib. The project includes a tile-based map, player movement and wall collision, a minimap/2D map view, textured raycast walls, and GLSL-powered dynamic lighting for the floor and ceiling.
 
 ## Requirements
 
@@ -25,7 +25,7 @@ Build the project without starting it:
 .\gradlew.bat build
 ```
 
-The Java application is configured with the native-access option required by the Jaylib FFM binding.
+The Java application is configured with the native-access option required by the Jaylib FFM binding. Run it from the project root so the application can find the shader and texture files in `Assets/`.
 
 ## Controls
 
@@ -40,7 +40,7 @@ The Java application is configured with the native-access option required by the
 | `G` | Toggle the centered 2D map view |
 | `T` | Toggle textured walls and shaded solid wall colors |
 
-The minimap is enabled by default. `G` switches between the centered 2D map and the raycasting view; in raycasting mode, `M` shows or hides the small map overlay. Walls use the brick texture by default; press `T` to switch to shaded solid colors.
+The minimap is enabled by default. `G` switches between the centered 2D map and the raycasting view; in raycasting mode, `M` shows or hides the small map overlay. Walls use the brick texture by default; press `T` to switch to dynamically lit solid colors. The floor and ceiling are shaded per pixel by the fragment shader in `Assets/shaders/floor_ceiling.fs`.
 
 ## Project layout
 
@@ -56,12 +56,13 @@ src/
   config/
     Settings.java        Display, map, movement, and raycasting settings
 Assets/
+  shaders/                GLSL floor and ceiling lighting shader
   textures/              Project textures
 ```
 
 ## Configuration
 
-Change the values in `src/config/Settings.java` to tune the screen size, map display, movement physics, mouse sensitivity, field of view, number of rays, and maximum ray distance. Starter tile layouts are defined by `Map.Starter_maps` in `src/Map.java`; tile values are `0` for empty space, `1` for walls, and `2` for the player spawn.
+Change the values in `src/config/Settings.java` to tune the screen size, map display, movement physics, mouse sensitivity, field of view, number of rays, maximum ray distance, and player-light radius, intensity, and attenuation. The player light follows the player's facing angle. Starter tile layouts are defined by `Map.Starter_maps` in `src/Map.java`; tile values are `0` for empty space, `1` for walls, and `2` for the player spawn.
 
 ## Build output
 

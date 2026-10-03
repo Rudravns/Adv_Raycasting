@@ -6,12 +6,14 @@ import com.raylib.Rectangle;
 import com.raylib.Texture;
 import com.raylib.Vector2;
 import config.Settings;
-
+import lighting.LightingManager; // Import your new package here!
 
 public class Wall {
+
     private final java.util.ArrayList<WallSlice> walls = new java.util.ArrayList<>();
     private Texture texture;
 
+    // We can use base solid colors now since the lighting manager handles side dimming automatically!
     private final Color verticalTint = LIGHTGRAY;
     private final Color horizontalTint = RAYWHITE;
 
@@ -33,10 +35,11 @@ public class Wall {
         }
     }
 
-    public void addWall(float rayLength, boolean isVertical, float textureOffset) {
+    // UPDATE: Accept hitX and hitY world positions directly from your DDA raycaster
+    public void addWall(float rayLength, boolean isVertical, float textureOffset, float hitX, float hitY) {
         float safeDistance = Math.max(rayLength, 0.0001f);
         float height = (Settings.screenHeight / safeDistance) + Settings.wallHeight;
-        walls.add(new WallSlice(height, isVertical, textureOffset));
+        walls.add(new WallSlice(height, isVertical, textureOffset, hitX, hitY));
     }
 
     public void clearWalls() {
@@ -56,9 +59,14 @@ public class Wall {
                     (float) Math.floor(wall.textureOffset * texture.width()));
             Rectangle source = new Rectangle(textureX, 0.0f, 1.0f, texture.height());
             Rectangle destination = new Rectangle(x, y, columnWidth + 1.0f, wall.height);
-            Color tint = calculateShadedColor(
+
+            // UPDATE: Swap out old shader for the dynamic vector calculation
+            Color tint = LightingManager.calculateLighting(
                     wall.isVertical ? verticalTint : horizontalTint,
-                    wall.height);
+                    wall.hitX,
+                    wall.hitY,
+                    wall.isVertical);
+
             if (Settings.simpleWallColors) {
                 drawRectangle((int) x, (int) y, (int) Math.ceil(columnWidth + 1.0f),
                         (int) Math.ceil(wall.height), tint);
@@ -68,25 +76,21 @@ public class Wall {
         }
     }
 
-    private Color calculateShadedColor(Color baseColor, float height) {
-        float ratio = height / (float) Settings.screenHeight*2.0f;
-        float shadeFactor = Math.max(0.15f, Math.min(1.0f, ratio));
-        byte r = (byte) Math.round(Byte.toUnsignedInt(baseColor.r()) * shadeFactor);
-        byte g = (byte) Math.round(Byte.toUnsignedInt(baseColor.g()) * shadeFactor);
-        byte b = (byte) Math.round(Byte.toUnsignedInt(baseColor.b()) * shadeFactor);
-
-        return new Color(r, g, b, baseColor.a());
-    }
-
     private static final class WallSlice {
+
         private final float height;
         private final boolean isVertical;
         private final float textureOffset;
+        // Added world variables
+        private final float hitX;
+        private final float hitY;
 
-        private WallSlice(float height, boolean isVertical, float textureOffset) {
+        private WallSlice(float height, boolean isVertical, float textureOffset, float hitX, float hitY) {
             this.height = height;
             this.isVertical = isVertical;
             this.textureOffset = textureOffset;
+            this.hitX = hitX;
+            this.hitY = hitY;
         }
     }
 }

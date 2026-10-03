@@ -1,32 +1,17 @@
 
 import java.util.ArrayList;
 
-import static com.raylib.Raylib.BLACK;
-import static com.raylib.Raylib.KeyboardKey.KEY_G;
-import static com.raylib.Raylib.KeyboardKey.KEY_M;
-import static com.raylib.Raylib.KeyboardKey.KEY_P;
-import static com.raylib.Raylib.KeyboardKey.KEY_T;
-import static com.raylib.Raylib.RAYWHITE;
-import static com.raylib.Raylib.beginDrawing;
-import static com.raylib.Raylib.clearBackground;
-import static com.raylib.Raylib.closeWindow;
-import static com.raylib.Raylib.disableCursor;
-import static com.raylib.Raylib.drawFPS;
-import static com.raylib.Raylib.drawRectangle;
-import static com.raylib.Raylib.enableCursor;
-import static com.raylib.Raylib.endDrawing;
-import static com.raylib.Raylib.getScreenHeight;
-import static com.raylib.Raylib.getScreenWidth;
-import static com.raylib.Raylib.initWindow;
-import static com.raylib.Raylib.isKeyPressed;
-import static com.raylib.Raylib.setTargetFPS;
-import static com.raylib.Raylib.windowShouldClose;
-import com.raylib.Vector2;
+import static com.raylib.Raylib.*;
+import static com.raylib.Raylib.KeyboardKey.*;
+import com.raylib.*;
 
 import Casting.Ray;
 import Casting.Wall;
 import Entities.Player;
 import config.Settings;
+import lighting.FloorCeilingShader;
+import lighting.LightingManager;
+import lighting.PointLight;
 
 public class Main {
 
@@ -37,10 +22,13 @@ public class Main {
     public static Player player;
     public static ArrayList<Ray> rays = new ArrayList<>();
     public static Wall wall = new Wall();
+    private static final FloorCeilingShader floorCeilingShader = new FloorCeilingShader();
+    private static PointLight playerLight;
+    private static final PointLight environmentLight = new PointLight(4.5f, 7.5f, 5.0f, GREEN);
 
 
     static { //pre setup before main is called
-        map.setupMap(Map.Starter_maps.MAP2);
+        map.setupMap(Map.Starter_maps.MAP1);
         // Use the display dimensions for a fullscreen-sized window.
         Settings.screenWidth = getScreenWidth();
         Settings.screenHeight = getScreenHeight();
@@ -60,6 +48,17 @@ public class Main {
     public static void main(String[] args) {
         initWindow(Settings.screenWidth, Settings.screenHeight, "Raylib + Java");
         wall.loadTexture();
+        floorCeilingShader.load();
+        playerLight = new PointLight(
+                player.getX() + 0.5f,
+                player.getY() + 0.5f,
+                Settings.PLAYER_LIGHT_RADIUS,
+                RAYWHITE,
+                Settings.PLAYER_LIGHT_INTENSITY,
+                Settings.PLAYER_LIGHT_ATTENUATION,
+                player.getAngle());
+        LightingManager.addLight(playerLight);
+        LightingManager.addLight(environmentLight);
         if (Settings.mouseLocked) {
            disableCursor();
         }
@@ -90,17 +89,24 @@ public class Main {
                 Settings.simpleWallColors = !Settings.simpleWallColors;
             }
 
+            if (isKeyPressed(KEY_I)){
+                playerLight.intensity = (playerLight.intensity == 0.0f) ? Settings.PLAYER_LIGHT_INTENSITY : 0.0f;
+            }
 
             beginDrawing();
             clearBackground(RAYWHITE);
 
-
-            //draw a makeshift floor
-            drawRectangle(0, Settings.screenHeight / 2, Settings.screenWidth, Settings.screenHeight / 2, com.raylib.Raylib.DARKGRAY);
-
             // Update first, then draw
             player.updatePosition(dt, map::getTile, Map.TileType.WALL.getValue());
+            LightingManager.updateLightDirection(playerLight, player.getAngle());
+            LightingManager.updateLightPosition(
+                    playerLight, player.getX() + 0.5f, player.getY() + 0.5f);
             updateRays();
+
+            if (!Settings.is2DMode) {
+                floorCeilingShader.draw(
+                        player.getCenterPosition(), player.getAngle(), playerLight, environmentLight);
+            }
 
             //draw stuff here (Order matters)
             wall.draw(); //walls
@@ -117,10 +123,16 @@ public class Main {
 
             //text
             drawFPS(20, 20);
+            //draw pos
+            String posText = String.format("Player Position: (%.2f, %.2f)", player.getX(), player.getY());
+            drawText(posText, 20, 50, 20, BLACK);
+            String angleText = String.format("Player Angle: %.2f radians", player.getAngle());
+            drawText(angleText, 20, 80, 20, BLACK);
             endDrawing();
         }
 
         wall.unloadTexture();
+        floorCeilingShader.unload();
         closeWindow();
     }
     
@@ -134,12 +146,17 @@ public class Main {
             float rayAngle = startAngle + i * angleStep;
             Ray ray = new Ray(player.getCenterPosition(), rayAngle);
             ray.cast(map::getTile, Map.TileType.WALL.getValue(), Settings.maxRenderDistance);
-            wall.addWall(ray.Distance(), ray.hitVerticalSide(), ray.getTextureOffset());
+            wall.addWall(
+                    ray.Distance(),
+                    ray.hitVerticalSide(),
+                    ray.getTextureOffset(),
+                    player.getX() + (ray.Distance() * ray.getDirX()), // hitX
+                    player.getY() + (ray.Distance() * ray.getDirY()) // hitY
+            );
+
             rays.add(ray);
         }
     }
-
-
 
     public static void drawMap() {
         for (int x = 0; x < map.getWidth(); x++) {

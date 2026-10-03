@@ -150,6 +150,14 @@ public class Player {
         return angle;
     }
 
+    public float getX() {
+        return position.x();
+    }
+
+    public float getY() {
+        return position.y();
+    }
+
     public void draw(int mapWidth, int mapHeight) {
         if (!Settings.is2DMode && !Settings.isMiniMap) {
             return;
