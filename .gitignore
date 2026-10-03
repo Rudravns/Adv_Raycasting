@@ -1,2 +1,22 @@
+# Gradle
 .gradle/
 build/
+
+# IDE project files
+.idea/
+*.iml
+.classpath
+.project
+.settings/
+out/
+
+# Local editor state
+.vscode/
+
+# Operating system files
+.DS_Store
+Thumbs.db
+
+# Logs and JVM crash reports
+*.log
+hs_err_pid*

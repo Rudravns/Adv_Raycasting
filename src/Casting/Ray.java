@@ -137,6 +137,11 @@ public class Ray {
         return hitVerticalSide;
     }
 
+    public float getTextureOffset() {
+        float coordinate = hitVerticalSide ? hitPosition.y() : hitPosition.x();
+        return coordinate - (float) Math.floor(coordinate);
+    }
+
     public boolean hasHit() {
         return hit;
     }

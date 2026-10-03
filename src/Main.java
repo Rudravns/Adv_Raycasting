@@ -5,12 +5,14 @@ import static com.raylib.Raylib.BLACK;
 import static com.raylib.Raylib.KeyboardKey.KEY_G;
 import static com.raylib.Raylib.KeyboardKey.KEY_M;
 import static com.raylib.Raylib.KeyboardKey.KEY_P;
+import static com.raylib.Raylib.KeyboardKey.KEY_T;
 import static com.raylib.Raylib.RAYWHITE;
 import static com.raylib.Raylib.beginDrawing;
 import static com.raylib.Raylib.clearBackground;
 import static com.raylib.Raylib.closeWindow;
 import static com.raylib.Raylib.disableCursor;
 import static com.raylib.Raylib.drawFPS;
+import static com.raylib.Raylib.drawRectangle;
 import static com.raylib.Raylib.enableCursor;
 import static com.raylib.Raylib.endDrawing;
 import static com.raylib.Raylib.getScreenHeight;
@@ -38,7 +40,7 @@ public class Main {
 
 
     static { //pre setup before main is called
-        map.setupMap(Map.Starter_maps.MAP1);
+        map.setupMap(Map.Starter_maps.MAP2);
         // Use the display dimensions for a fullscreen-sized window.
         Settings.screenWidth = getScreenWidth();
         Settings.screenHeight = getScreenHeight();
@@ -57,10 +59,11 @@ public class Main {
 
     public static void main(String[] args) {
         initWindow(Settings.screenWidth, Settings.screenHeight, "Raylib + Java");
+        wall.loadTexture();
         if (Settings.mouseLocked) {
            disableCursor();
         }
-        setTargetFPS(100);
+        setTargetFPS(60);
 
         while (!windowShouldClose()) {
             // 2. Update your static variables with the current screen size if the window resizes
@@ -83,21 +86,28 @@ public class Main {
             if (isKeyPressed(KEY_G)) {
                 Settings.is2DMode = !Settings.is2DMode;
             }
+            if (isKeyPressed(KEY_T)) {
+                Settings.simpleWallColors = !Settings.simpleWallColors;
+            }
 
 
             beginDrawing();
             clearBackground(RAYWHITE);
+
+
+            //draw a makeshift floor
+            drawRectangle(0, Settings.screenHeight / 2, Settings.screenWidth, Settings.screenHeight / 2, com.raylib.Raylib.DARKGRAY);
 
             // Update first, then draw
             player.updatePosition(dt, map::getTile, Map.TileType.WALL.getValue());
             updateRays();
 
             //draw stuff here (Order matters)
+            wall.draw(); //walls
+
             drawMap();// map/mini-map
 
             player.draw(map.getWidth(), map.getHeight()); //player
-            
-            wall.draw(); //walls
             
             
             // rays
@@ -110,6 +120,7 @@ public class Main {
             endDrawing();
         }
 
+        wall.unloadTexture();
         closeWindow();
     }
     
@@ -123,7 +134,7 @@ public class Main {
             float rayAngle = startAngle + i * angleStep;
             Ray ray = new Ray(player.getCenterPosition(), rayAngle);
             ray.cast(map::getTile, Map.TileType.WALL.getValue(), Settings.maxRenderDistance);
-            wall.addWall(ray.Distance());
+            wall.addWall(ray.Distance(), ray.hitVerticalSide(), ray.getTextureOffset());
             rays.add(ray);
         }
     }
