@@ -1,0 +1,152 @@
+
+import java.util.ArrayList;
+
+import static com.raylib.Raylib.BLACK;
+import static com.raylib.Raylib.KeyboardKey.KEY_G;
+import static com.raylib.Raylib.KeyboardKey.KEY_M;
+import static com.raylib.Raylib.KeyboardKey.KEY_P;
+import static com.raylib.Raylib.RAYWHITE;
+import static com.raylib.Raylib.beginDrawing;
+import static com.raylib.Raylib.clearBackground;
+import static com.raylib.Raylib.closeWindow;
+import static com.raylib.Raylib.disableCursor;
+import static com.raylib.Raylib.drawFPS;
+import static com.raylib.Raylib.enableCursor;
+import static com.raylib.Raylib.endDrawing;
+import static com.raylib.Raylib.getScreenHeight;
+import static com.raylib.Raylib.getScreenWidth;
+import static com.raylib.Raylib.initWindow;
+import static com.raylib.Raylib.isKeyPressed;
+import static com.raylib.Raylib.setTargetFPS;
+import static com.raylib.Raylib.windowShouldClose;
+import com.raylib.Vector2;
+
+import Casting.Ray;
+import Casting.Wall;
+import Entities.Player;
+import config.Settings;
+
+public class Main {
+
+    // 1. Declare width and height as static class variables so main() can access them
+
+    public static Map map = new Map(20, 20);
+    public static float dt = 0.0f; // Delta time (time between frames)
+    public static Player player;
+    public static ArrayList<Ray> rays = new ArrayList<>();
+    public static Wall wall = new Wall();
+
+
+    static { //pre setup before main is called
+        map.setupMap(Map.Starter_maps.MAP1);
+        // Use the display dimensions for a fullscreen-sized window.
+        Settings.screenWidth = getScreenWidth();
+        Settings.screenHeight = getScreenHeight();
+
+        // Initialize player at the spawn point noted by 3
+        Vector2 spawnPoint = map.getPlayerSpawnPoint();
+        if (spawnPoint != null) {
+            player = new Player(spawnPoint, 0.0f);
+        }
+        else {
+            System.err.println("No spawn point found in the map!");
+            System.exit(1);
+        }
+
+    }
+
+    public static void main(String[] args) {
+        initWindow(Settings.screenWidth, Settings.screenHeight, "Raylib + Java");
+        if (Settings.mouseLocked) {
+           disableCursor();
+        }
+        setTargetFPS(100);
+
+        while (!windowShouldClose()) {
+            // 2. Update your static variables with the current screen size if the window resizes
+            Settings.screenWidth = getScreenWidth();
+            Settings.screenHeight = getScreenHeight();
+            dt = com.raylib.Raylib.getFrameTime(); // Update delta time
+            
+            // events
+            if (isKeyPressed(KEY_M)) {
+                Settings.isMiniMap = !Settings.isMiniMap;
+            }
+            if (isKeyPressed(KEY_P)) {
+                Settings.mouseLocked = !Settings.mouseLocked;
+                if (Settings.mouseLocked) {
+                    disableCursor();
+                } else {
+                    enableCursor();
+                }
+            }
+            if (isKeyPressed(KEY_G)) {
+                Settings.is2DMode = !Settings.is2DMode;
+            }
+
+
+            beginDrawing();
+            clearBackground(RAYWHITE);
+
+            // Update first, then draw
+            player.updatePosition(dt, map::getTile, Map.TileType.WALL.getValue());
+            updateRays();
+
+            //draw stuff here (Order matters)
+            drawMap();// map/mini-map
+
+            player.draw(map.getWidth(), map.getHeight()); //player
+            
+            wall.draw(); //walls
+            
+            
+            // rays
+            for (Ray ray : rays) {
+                ray.draw(map.getWidth(), map.getHeight());
+            }
+
+            //text
+            drawFPS(20, 20);
+            endDrawing();
+        }
+
+        closeWindow();
+    }
+    
+    public static void updateRays() {
+        rays.clear();
+        wall.clearWalls();
+        float startAngle = player.getAngle() - (float) Math.toRadians(Settings.fov) / 2.0f;
+        float angleStep = (float) Math.toRadians(Settings.fov) / Settings.numRays;
+
+        for (int i = 0; i < Settings.numRays; i++) {
+            float rayAngle = startAngle + i * angleStep;
+            Ray ray = new Ray(player.getCenterPosition(), rayAngle);
+            ray.cast(map::getTile, Map.TileType.WALL.getValue(), Settings.maxRenderDistance);
+            wall.addWall(ray.Distance());
+            rays.add(ray);
+        }
+    }
+
+
+
+    public static void drawMap() {
+        for (int x = 0; x < map.getWidth(); x++) {
+            for (int y = 0; y < map.getHeight(); y++) {
+                int tileType = map.getTile(x, y);
+                if (tileType == Map.TileType.WALL.getValue()) {
+                    if (!Settings.is2DMode && Settings.isMiniMap) {
+                        int posX = (x * Settings.tileSizeMiniMap) + (Settings.screenWidth - (map.getWidth() * Settings.tileSizeMiniMap)); //top right corner of the map
+                        int posY = y * Settings.tileSizeMiniMap;
+                        com.raylib.Raylib.drawRectangle(posX, posY, Settings.tileSizeMiniMap, Settings.tileSizeMiniMap, BLACK);
+                    }
+                    else if (Settings.is2DMode) {
+                        int posX = (x * Settings.tileSize2d) + ((Settings.screenWidth - (map.getWidth() * Settings.tileSize2d)) / 2); //center the map
+                        int posY = (y * Settings.tileSize2d) + ((Settings.screenHeight - (map.getHeight() * Settings.tileSize2d)) / 2); //center the map
+                        com.raylib.Raylib.drawRectangle(posX, posY, Settings.tileSize2d, Settings.tileSize2d, BLACK);
+                    }
+                }
+            }
+        }
+    }
+}
