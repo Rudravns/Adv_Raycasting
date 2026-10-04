@@ -19,6 +19,9 @@ public class Wall {
     private final java.util.ArrayList<WallSlice> walls = new java.util.ArrayList<>();
     private Texture texture;
     private Texture normalTexture;
+    private Texture heightTexture;
+    private Texture ambientOcclusionTexture;
+    private Texture roughnessTexture;
     private Shader specularShader;
     private int worldPositionLocation;
     private int surfaceNormalLocation;
@@ -32,6 +35,10 @@ public class Wall {
     private int shininessLocation;
     private int normalMapLocation;
     private int normalStrengthLocation;
+    private int heightMapLocation;
+    private int ambientOcclusionMapLocation;
+    private int roughnessMapLocation;
+    private int heightScaleLocation;
 
     // We can use base solid colors now since the lighting manager handles side dimming automatically!
     private final Color verticalTint = LIGHTGRAY;
@@ -41,47 +48,52 @@ public class Wall {
         if (texture != null) {
             return;
         }
-        texture = com.raylib.Raylib.loadTexture("Assets/textures/brickWall.jpg");
-        if (texture.width() <= 0 || texture.height() <= 0) {
-            texture = null;
-            throw new IllegalStateException("Could not load wall texture: Assets/textures/brickWall.jpg");
-        }
+        try {
+            texture = loadMaterialMap("Assets/materials/brickWall/albedo.png");
+            normalTexture = loadMaterialMap("Assets/materials/brickWall/normal.png");
+            heightTexture = loadMaterialMap("Assets/materials/brickWall/height.png");
+            ambientOcclusionTexture = loadMaterialMap("Assets/materials/brickWall/ao.png");
+            roughnessTexture = loadMaterialMap("Assets/materials/brickWall/roughness.png");
 
-        normalTexture = com.raylib.Raylib.loadTexture("Assets/Normal_maps/brickWall_normal.png");
-        if (normalTexture.width() <= 0 || normalTexture.height() <= 0) {
-            com.raylib.Raylib.unloadTexture(texture);
-            texture = null;
-            normalTexture = null;
-            throw new IllegalStateException("Could not load wall normal map: Assets/Normal_maps/brickWall_normal.png");
-        }
+            specularShader = com.raylib.Raylib.loadShader("", "Assets/shaders/specular.fs");
+            worldPositionLocation = getShaderLocation(specularShader, "uWorldPosition");
+            surfaceNormalLocation = getShaderLocation(specularShader, "uSurfaceNormal");
+            cameraPositionLocation = getShaderLocation(specularShader, "uCameraPosition");
+            lightPositionRadiusIntensityLocation = getShaderLocation(specularShader, "uLightPositionRadiusIntensity");
+            lightColorLocation = getShaderLocation(specularShader, "uLightColor");
+            lightDirectionAttenuationLocation = getShaderLocation(specularShader, "uLightDirectionAttenuation");
+            lightCountLocation = getShaderLocation(specularShader, "uLightCount");
+            ambientLightLocation = getShaderLocation(specularShader, "uAmbientLight");
+            specularStrengthLocation = getShaderLocation(specularShader, "uSpecularStrength");
+            shininessLocation = getShaderLocation(specularShader, "uShininess");
+            normalMapLocation = getShaderLocation(specularShader, "uNormalMap");
+            normalStrengthLocation = getShaderLocation(specularShader, "uNormalStrength");
+            heightMapLocation = getShaderLocation(specularShader, "uHeightMap");
+            ambientOcclusionMapLocation = getShaderLocation(specularShader, "uAmbientOcclusionMap");
+            roughnessMapLocation = getShaderLocation(specularShader, "uRoughnessMap");
+            heightScaleLocation = getShaderLocation(specularShader, "uHeightScale");
 
-        specularShader = com.raylib.Raylib.loadShader("", "Assets/shaders/specular.fs");
-        worldPositionLocation = getShaderLocation(specularShader, "uWorldPosition");
-        surfaceNormalLocation = getShaderLocation(specularShader, "uSurfaceNormal");
-        cameraPositionLocation = getShaderLocation(specularShader, "uCameraPosition");
-        lightPositionRadiusIntensityLocation = getShaderLocation(specularShader, "uLightPositionRadiusIntensity");
-        lightColorLocation = getShaderLocation(specularShader, "uLightColor");
-        lightDirectionAttenuationLocation = getShaderLocation(specularShader, "uLightDirectionAttenuation");
-        lightCountLocation = getShaderLocation(specularShader, "uLightCount");
-        ambientLightLocation = getShaderLocation(specularShader, "uAmbientLight");
-        specularStrengthLocation = getShaderLocation(specularShader, "uSpecularStrength");
-        shininessLocation = getShaderLocation(specularShader, "uShininess");
-        normalMapLocation = getShaderLocation(specularShader, "uNormalMap");
-        normalStrengthLocation = getShaderLocation(specularShader, "uNormalStrength");
-
-        if (worldPositionLocation < 0 || surfaceNormalLocation < 0 || cameraPositionLocation < 0
-                || lightPositionRadiusIntensityLocation < 0 || lightColorLocation < 0
-                || lightDirectionAttenuationLocation < 0 || lightCountLocation < 0
-                || ambientLightLocation < 0 || specularStrengthLocation < 0 || shininessLocation < 0
-                || normalMapLocation < 0 || normalStrengthLocation < 0) {
-            com.raylib.Raylib.unloadShader(specularShader);
-            specularShader = null;
-            com.raylib.Raylib.unloadTexture(texture);
-            texture = null;
-            com.raylib.Raylib.unloadTexture(normalTexture);
-            normalTexture = null;
-            throw new IllegalStateException("Specular wall shader is missing a required uniform");
+            if (worldPositionLocation < 0 || surfaceNormalLocation < 0 || cameraPositionLocation < 0
+                    || lightPositionRadiusIntensityLocation < 0 || lightColorLocation < 0
+                    || lightDirectionAttenuationLocation < 0 || lightCountLocation < 0
+                    || ambientLightLocation < 0 || specularStrengthLocation < 0 || shininessLocation < 0
+                    || normalMapLocation < 0 || normalStrengthLocation < 0 || heightMapLocation < 0
+                    || ambientOcclusionMapLocation < 0 || roughnessMapLocation < 0 || heightScaleLocation < 0) {
+                throw new IllegalStateException("Specular wall shader is missing a required uniform");
+            }
+        } catch (RuntimeException exception) {
+            unloadTexture();
+            throw exception;
         }
+    }
+
+    private static Texture loadMaterialMap(String path) {
+        Texture materialMap = com.raylib.Raylib.loadTexture(path);
+        if (materialMap.width() <= 0 || materialMap.height() <= 0) {
+            com.raylib.Raylib.unloadTexture(materialMap);
+            throw new IllegalStateException("Could not load wall material map: " + path);
+        }
+        return materialMap;
     }
 
     public void unloadTexture() {
@@ -92,6 +104,18 @@ public class Wall {
         if (normalTexture != null) {
             com.raylib.Raylib.unloadTexture(normalTexture);
             normalTexture = null;
+        }
+        if (heightTexture != null) {
+            com.raylib.Raylib.unloadTexture(heightTexture);
+            heightTexture = null;
+        }
+        if (ambientOcclusionTexture != null) {
+            com.raylib.Raylib.unloadTexture(ambientOcclusionTexture);
+            ambientOcclusionTexture = null;
+        }
+        if (roughnessTexture != null) {
+            com.raylib.Raylib.unloadTexture(roughnessTexture);
+            roughnessTexture = null;
         }
         if (specularShader != null) {
             com.raylib.Raylib.unloadShader(specularShader);
@@ -117,8 +141,9 @@ public class Wall {
         }
         Objects.requireNonNull(cameraPosition, "cameraPosition");
         Objects.requireNonNull(lights, "lights");
-        if (lights.length > 2) {
-            throw new IllegalArgumentException("Specular wall shader supports at most two lights");
+        if (lights.length > Settings.MAX_POINT_LIGHTS) {
+            throw new IllegalArgumentException(
+                    "Wall shader supports at most " + Settings.MAX_POINT_LIGHTS + " lights");
         }
         float columnWidth = (float) Settings.screenWidth / Settings.numRays;
         if (Settings.simpleWallColors) {
@@ -127,9 +152,9 @@ public class Wall {
         }
 
         int lightCount = lights.length;
-        float[] lightPositionRadiusIntensity = new float[2 * 4];
-        float[] lightColors = new float[2 * 4];
-        float[] lightDirectionAttenuation = new float[2 * 4];
+        float[] lightPositionRadiusIntensity = new float[Settings.MAX_POINT_LIGHTS * 4];
+        float[] lightColors = new float[Settings.MAX_POINT_LIGHTS * 4];
+        float[] lightDirectionAttenuation = new float[Settings.MAX_POINT_LIGHTS * 4];
         for (int i = 0; i < lightCount; i++) {
             PointLight light = Objects.requireNonNull(lights[i], "light");
             int offset = i * 4;
@@ -157,22 +182,25 @@ public class Wall {
             cameraPositionValue.setAtIndex(ValueLayout.JAVA_FLOAT, 0, cameraPosition.x());
             cameraPositionValue.setAtIndex(ValueLayout.JAVA_FLOAT, 1, cameraPosition.y());
             ambientLight.set(ValueLayout.JAVA_FLOAT, 0, 0.15f);
-            specularStrength.set(ValueLayout.JAVA_FLOAT, 0, 0.35f);
-            shininess.set(ValueLayout.JAVA_FLOAT, 0, 24.0f);
+            specularStrength.set(ValueLayout.JAVA_FLOAT, 0, Settings.WALL_SPECULAR_STRENGTH);
+            shininess.set(ValueLayout.JAVA_FLOAT, 0, Settings.WALL_SHININESS);
 
             setShaderValueTexture(specularShader, normalMapLocation, normalTexture);
             setShaderValue(specularShader, normalStrengthLocation,
                     arena.allocateFrom(ValueLayout.JAVA_FLOAT, Settings.WALL_NORMAL_STRENGTH),
                     Raylib.ShaderUniformDataType.SHADER_UNIFORM_FLOAT);
+            setShaderValue(specularShader, heightScaleLocation,
+                    arena.allocateFrom(ValueLayout.JAVA_FLOAT, Settings.WALL_HEIGHT_SCALE),
+                    Raylib.ShaderUniformDataType.SHADER_UNIFORM_FLOAT);
             setShaderValueV(specularShader, lightPositionRadiusIntensityLocation,
                     arena.allocateFrom(ValueLayout.JAVA_FLOAT, lightPositionRadiusIntensity),
-                    Raylib.ShaderUniformDataType.SHADER_UNIFORM_VEC4, 2);
+                    Raylib.ShaderUniformDataType.SHADER_UNIFORM_VEC4, Settings.MAX_POINT_LIGHTS);
             setShaderValueV(specularShader, lightColorLocation,
                     arena.allocateFrom(ValueLayout.JAVA_FLOAT, lightColors),
-                    Raylib.ShaderUniformDataType.SHADER_UNIFORM_VEC4, 2);
+                    Raylib.ShaderUniformDataType.SHADER_UNIFORM_VEC4, Settings.MAX_POINT_LIGHTS);
             setShaderValueV(specularShader, lightDirectionAttenuationLocation,
                     arena.allocateFrom(ValueLayout.JAVA_FLOAT, lightDirectionAttenuation),
-                    Raylib.ShaderUniformDataType.SHADER_UNIFORM_VEC4, 2);
+                    Raylib.ShaderUniformDataType.SHADER_UNIFORM_VEC4, Settings.MAX_POINT_LIGHTS);
             setShaderValue(specularShader, lightCountLocation,
                     arena.allocateFrom(ValueLayout.JAVA_INT, lightCount),
                     Raylib.ShaderUniformDataType.SHADER_UNIFORM_INT);
@@ -204,7 +232,13 @@ public class Wall {
                         Raylib.ShaderUniformDataType.SHADER_UNIFORM_VEC2);
 
                 // Ending the shader mode flushes this slice before the next slice changes its uniforms.
+                // Re-bind the normal map inside every beginShaderMode call because endShaderMode
+                // resets active texture units in Raylib.
                 beginShaderMode(specularShader);
+                setShaderValueTexture(specularShader, normalMapLocation, normalTexture);
+                setShaderValueTexture(specularShader, heightMapLocation, heightTexture);
+                setShaderValueTexture(specularShader, ambientOcclusionMapLocation, ambientOcclusionTexture);
+                setShaderValueTexture(specularShader, roughnessMapLocation, roughnessTexture);
                 drawTexturePro(texture, source, destination,
                         new Vector2(0.0f, 0.0f), 0.0f, WHITE);
                 endShaderMode();

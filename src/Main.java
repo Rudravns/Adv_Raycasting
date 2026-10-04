@@ -25,7 +25,7 @@ public class Main {
     private static final FloorCeilingShader floorCeilingShader = new FloorCeilingShader();
     private static PointLight playerLight;
     private static final PointLight environmentLight = new PointLight(4.5f, 7.5f, 5.0f, GREEN);
-
+    private static final PointLight environmentLight2 = new PointLight(5f, 7.5f, 5.0f, RED, 5.0f);
 
     static { //pre setup before main is called
         map.setupMap(Map.Starter_maps.MAP1);
@@ -50,8 +50,8 @@ public class Main {
         wall.loadTexture();
         floorCeilingShader.load();
         playerLight = new PointLight(
-                player.getX() + 0.5f,
-                player.getY() + 0.5f,
+                player.getCenterPosition().x(),
+                player.getCenterPosition().y(),
                 Settings.PLAYER_LIGHT_RADIUS,
                 RAYWHITE,
                 Settings.PLAYER_LIGHT_INTENSITY,
@@ -59,6 +59,7 @@ public class Main {
                 player.getAngle());
         LightingManager.addLight(playerLight);
         LightingManager.addLight(environmentLight);
+        LightingManager.addLight(environmentLight2);
         if (Settings.mouseLocked) {
            disableCursor();
         }
@@ -100,16 +101,16 @@ public class Main {
             player.updatePosition(dt, map::getTile, Map.TileType.WALL.getValue());
             LightingManager.updateLightDirection(playerLight, player.getAngle());
             LightingManager.updateLightPosition(
-                    playerLight, player.getX() + 0.5f, player.getY() + 0.5f);
+                    playerLight, player.getCenterPosition().x(), player.getCenterPosition().y());
             updateRays();
 
             if (!Settings.is2DMode) {
                 floorCeilingShader.draw(
-                        player.getCenterPosition(), player.getAngle(), playerLight, environmentLight);
+                        player.getCenterPosition(), player.getAngle(), playerLight, environmentLight, environmentLight2);
             }
 
             //draw stuff here (Order matters)
-            wall.draw(player.getCenterPosition(), playerLight, environmentLight); // walls
+            wall.draw(player.getCenterPosition(), playerLight, environmentLight, environmentLight2); // walls
 
             drawMap();// map/mini-map
 
@@ -128,6 +129,13 @@ public class Main {
             drawText(posText, 20, 50, 20, BLACK);
             String angleText = String.format("Player Angle: %.2f radians", player.getAngle());
             drawText(angleText, 20, 80, 20, BLACK);
+            // Crosshair dot at screen center
+            if (!Settings.is2DMode) {
+                int cx = Settings.screenWidth / 2;
+                int cy = Settings.screenHeight / 2;
+                drawCircle(cx, cy, 3, WHITE);
+                drawCircle(cx, cy, 2, DARKGRAY);
+            }
             endDrawing();
         }
 
@@ -146,8 +154,14 @@ public class Main {
             float rayAngle = startAngle + i * angleStep;
             Ray ray = new Ray(player.getCenterPosition(), rayAngle);
             ray.cast(map::getTile, Map.TileType.WALL.getValue(), Settings.maxRenderDistance);
+
+            // Fish-eye correction: use the perpendicular distance (not Euclidean) so walls
+            // appear straight rather than curved (barrel-distorted).
+            float angleOffset  = rayAngle - player.getAngle();
+            float perpDistance = ray.Distance() * (float) Math.cos(angleOffset);
+
             wall.addWall(
-                    ray.Distance(),
+                    perpDistance,
                     ray.hitVerticalSide(),
                     ray.getTextureOffset(),
                     ray.getHitPosition().x(),

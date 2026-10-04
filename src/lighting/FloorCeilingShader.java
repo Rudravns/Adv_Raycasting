@@ -19,7 +19,6 @@ import java.util.Objects;
 
 public final class FloorCeilingShader {
     private static final String SHADER_PATH = "Assets/shaders/floor_ceiling.fs";
-    private static final int LIGHT_COUNT = 2;
     private static final int FLOAT = Raylib.ShaderUniformDataType.SHADER_UNIFORM_FLOAT;
     private static final int VEC2 = Raylib.ShaderUniformDataType.SHADER_UNIFORM_VEC2;
     private static final int VEC4 = Raylib.ShaderUniformDataType.SHADER_UNIFORM_VEC4;
@@ -66,14 +65,15 @@ public final class FloorCeilingShader {
         }
         Objects.requireNonNull(playerPosition, "playerPosition");
         Objects.requireNonNull(lights, "lights");
-        if (lights.length > LIGHT_COUNT) {
-            throw new IllegalArgumentException("Floor/ceiling shader supports at most two lights");
+        if (lights.length > Settings.MAX_POINT_LIGHTS) {
+            throw new IllegalArgumentException(
+                    "Floor/ceiling shader supports at most " + Settings.MAX_POINT_LIGHTS + " lights");
         }
 
         // Pack each light into a vec4: position XY plus radius, and normalized RGBA.
-        float[] lightPositionRadius = new float[LIGHT_COUNT * 4];
-        float[] lightColors = new float[LIGHT_COUNT * 4];
-        float[] lightDirectionAttenuation = new float[LIGHT_COUNT * 4];
+        float[] lightPositionRadius = new float[Settings.MAX_POINT_LIGHTS * 4];
+        float[] lightColors = new float[Settings.MAX_POINT_LIGHTS * 4];
+        float[] lightDirectionAttenuation = new float[Settings.MAX_POINT_LIGHTS * 4];
         for (int i = 0; i < lights.length; i++) {
             PointLight light = Objects.requireNonNull(lights[i], "light");
             int offset = i * 4;
@@ -101,11 +101,14 @@ public final class FloorCeilingShader {
             setShaderValue(shader, fieldOfViewLocation,
                     arena.allocateFrom(ValueLayout.JAVA_FLOAT, (float) Math.toRadians(Settings.fov)), FLOAT);
             setShaderValueV(shader, lightPositionRadiusLocation,
-                    arena.allocateFrom(ValueLayout.JAVA_FLOAT, lightPositionRadius), VEC4, LIGHT_COUNT);
+                    arena.allocateFrom(ValueLayout.JAVA_FLOAT, lightPositionRadius),
+                    VEC4, Settings.MAX_POINT_LIGHTS);
             setShaderValueV(shader, lightColorLocation,
-                    arena.allocateFrom(ValueLayout.JAVA_FLOAT, lightColors), VEC4, LIGHT_COUNT);
+                    arena.allocateFrom(ValueLayout.JAVA_FLOAT, lightColors),
+                    VEC4, Settings.MAX_POINT_LIGHTS);
             setShaderValueV(shader, lightDirectionAttenuationLocation,
-                    arena.allocateFrom(ValueLayout.JAVA_FLOAT, lightDirectionAttenuation), VEC4, LIGHT_COUNT);
+                    arena.allocateFrom(ValueLayout.JAVA_FLOAT, lightDirectionAttenuation),
+                    VEC4, Settings.MAX_POINT_LIGHTS);
             setShaderValue(shader, lightCountLocation,
                     arena.allocateFrom(ValueLayout.JAVA_INT, lights.length), INT);
 

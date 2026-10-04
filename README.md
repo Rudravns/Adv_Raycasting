@@ -1,6 +1,6 @@
 # Advanced Raycasting
 
-A Java raycasting project built with Gradle and [Jaylib](https://github.com/electronstudio/jaylib), a Java binding for raylib. The project includes a tile-based map, player movement and wall collision, a minimap/2D map view, specular-lit textured raycast walls, and GLSL-powered dynamic lighting for the floor and ceiling.
+A Java raycasting project built with Gradle and [Jaylib](https://github.com/electronstudio/jaylib), a Java binding for raylib. It includes tile-based maps, player movement with circle-based wall collision, a minimap and 2D map view, textured raycast walls with normal/parallax mapping, and GLSL dynamic lighting for walls, the floor, and the ceiling.
 
 ## Requirements
 
@@ -25,7 +25,7 @@ Build the project without starting it:
 .\gradlew.bat build
 ```
 
-The Java application is configured with the native-access option required by the Jaylib FFM binding. Run it from the project root so the application can find the shader and texture files in `Assets/`.
+The Java application is configured with the native-access option required by the Jaylib FFM binding. Run it from the project root so the application can find the shader and material files in `Assets/`. The initial window is sized to the current display resolution.
 
 ## Controls
 
@@ -39,8 +39,11 @@ The Java application is configured with the native-access option required by the
 | `M` | Toggle the minimap |
 | `G` | Toggle the centered 2D map view |
 | `T` | Toggle textured walls and shaded solid wall colors |
+| `I` | Toggle the player's light on/off |
 
-The minimap is enabled by default. `G` switches between the centered 2D map and the raycasting view; in raycasting mode, `M` shows or hides the small map overlay. Walls use the brick diffuse texture, its normal map in `Assets/Normal_maps/brickWall_normal.png`, and the specular shader in `Assets/shaders/specular.fs` by default. Normal-map intensity is controlled by `Settings.WALL_NORMAL_STRENGTH`. Press `T` to switch to dynamically lit solid colors. The floor and ceiling are shaded per pixel by the fragment shader in `Assets/shaders/floor_ceiling.fs`.
+The minimap is enabled by default. `G` switches between the centered 2D map and the raycasting view; in raycasting mode, `M` shows or hides the small map overlay. The player light follows the player's position and facing direction. Additional environment lights are configured in `src/Main.java`.
+
+Textured walls use the albedo, normal, height, ambient-occlusion, and roughness maps in `Assets/materials/brickWall/`. The wall shader uses the height map for parallax depth, AO for ambient shadowing, and roughness to shape highlights. `Settings.MAX_POINT_LIGHTS` controls the maximum number of lights supported by both the wall and floor/ceiling shaders (currently 32). Keep this value aligned with `MAX_POINT_LIGHTS` in both GLSL shader files if you change it. Tune the wall material with `Settings.WALL_NORMAL_STRENGTH`, `Settings.WALL_HEIGHT_SCALE`, `Settings.WALL_SPECULAR_STRENGTH`, and `Settings.WALL_SHININESS`. Press `T` to switch to shaded solid-color walls. Floor and ceiling lighting is handled per pixel by `Assets/shaders/floor_ceiling.fs`.
 
 ## Project layout
 
@@ -56,13 +59,15 @@ src/
   config/
     Settings.java        Display, map, movement, and raycasting settings
 Assets/
-  shaders/                GLSL floor/ceiling lighting and specular wall shaders
-  textures/              Project textures
+  materials/brickWall/    Albedo, normal, height, AO, and roughness maps
+  shaders/
+    floor_ceiling.fs      Per-pixel floor and ceiling lighting
+    specular.fs           Textured wall lighting and material effects
 ```
 
 ## Configuration
 
-Change the values in `src/config/Settings.java` to tune the screen size, map display, movement physics, mouse sensitivity, field of view, number of rays, maximum ray distance, and player-light radius, intensity, and attenuation. The player light follows the player's facing angle. Starter tile layouts are defined by `Map.Starter_maps` in `src/Map.java`; tile values are `0` for empty space, `1` for walls, and `2` for the player spawn.
+Change the values in `src/config/Settings.java` to tune the display, map view, movement physics, mouse sensitivity, field of view, ray count, render distance, player-light properties, supported light count, and wall material depth and highlights. Starter layouts are defined by `Map.Starter_maps` in `src/Map.java`; tile values are `0` for empty space, `1` for walls, and `2` for the player spawn.
 
 ## Build output
 

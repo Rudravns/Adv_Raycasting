@@ -26,12 +26,16 @@ public class Settings {
     public static boolean mouseLocked = true; // Flag to indicate if the mouse is locked to the center of the screen
     public static float MOUSE_SENSITIVITY = 0.5f; // Mouse sensitivity for looking around
     public static float fov = 90.0f; // Field of view in degrees
-    public static int numRays = 500; // Number of rays to cast for rendering
+    public static int numRays = 250; // Number of rays to cast for rendering
     public static float maxRenderDistance = 20.0f; // Maximum distance to render walls
     public static float wallHeight = 20.0f; // Height of walls in map tiles
     public static float PLAYER_LIGHT_RADIUS = 8.0f;
     public static float PLAYER_LIGHT_INTENSITY = 1.0f;
     public static float PLAYER_LIGHT_ATTENUATION = 2.0f;
-    public static float WALL_NORMAL_STRENGTH = 0.65f;
-    
+    public static final int MAX_POINT_LIGHTS = 32;
+    public static final float WALL_NORMAL_STRENGTH    = 1.6f;   // How much bricks pop out (higher = deeper relief)
+    public static final float WALL_HEIGHT_SCALE      = 0.035f; // Apparent depth from the height map
+    public static final float WALL_SPECULAR_STRENGTH  = 1.0f;   // Overall gloss intensity on walls
+    public static final float WALL_SHININESS          = 32.0f;  // Shininess exponent (higher = tighter hotspot)
+
 }

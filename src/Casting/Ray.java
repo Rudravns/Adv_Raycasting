@@ -138,8 +138,21 @@ public class Ray {
     }
 
     public float getTextureOffset() {
-        float coordinate = hitVerticalSide ? hitPosition.y() : hitPosition.x();
-        return coordinate - (float) Math.floor(coordinate);
+        float coordinate;
+        if (hitVerticalSide) {
+            // Vertical wall (X-axis boundary): texture scrolls along Y.
+            // Flip when facing +X so bricks always read left-to-right from outside.
+            coordinate = hitPosition.y();
+            if (getDirX() < 0.0f) coordinate = 1.0f - (coordinate - (float) Math.floor(coordinate));
+            else                   coordinate = coordinate - (float) Math.floor(coordinate);
+        } else {
+            // Horizontal wall (Y-axis boundary): texture scrolls along X.
+            // Flip when facing -Y so bricks always read left-to-right from outside.
+            coordinate = hitPosition.x();
+            if (getDirY() > 0.0f) coordinate = 1.0f - (coordinate - (float) Math.floor(coordinate));
+            else                   coordinate = coordinate - (float) Math.floor(coordinate);
+        }
+        return coordinate;
     }
 
     public boolean hasHit() {
