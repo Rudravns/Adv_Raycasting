@@ -32,5 +32,6 @@ public class Settings {
     public static float PLAYER_LIGHT_RADIUS = 8.0f;
     public static float PLAYER_LIGHT_INTENSITY = 1.0f;
     public static float PLAYER_LIGHT_ATTENUATION = 2.0f;
+    public static float WALL_NORMAL_STRENGTH = 0.65f;
     
 }

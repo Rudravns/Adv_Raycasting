@@ -109,7 +109,7 @@ public class Main {
             }
 
             //draw stuff here (Order matters)
-            wall.draw(); //walls
+            wall.draw(player.getCenterPosition(), playerLight, environmentLight); // walls
 
             drawMap();// map/mini-map
 
@@ -150,8 +150,10 @@ public class Main {
                     ray.Distance(),
                     ray.hitVerticalSide(),
                     ray.getTextureOffset(),
-                    player.getX() + (ray.Distance() * ray.getDirX()), // hitX
-                    player.getY() + (ray.Distance() * ray.getDirY()) // hitY
+                    ray.getHitPosition().x(),
+                    ray.getHitPosition().y(),
+                    ray.hitVerticalSide() ? (ray.getDirX() > 0.0f ? -1.0f : 1.0f) : 0.0f,
+                    ray.hitVerticalSide() ? 0.0f : (ray.getDirY() > 0.0f ? -1.0f : 1.0f)
             );
 
             rays.add(ray);

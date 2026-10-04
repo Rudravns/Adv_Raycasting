@@ -1,6 +1,6 @@
 # Advanced Raycasting
 
-A Java raycasting project built with Gradle and [Jaylib](https://github.com/electronstudio/jaylib), a Java binding for raylib. The project includes a tile-based map, player movement and wall collision, a minimap/2D map view, textured raycast walls, and GLSL-powered dynamic lighting for the floor and ceiling.
+A Java raycasting project built with Gradle and [Jaylib](https://github.com/electronstudio/jaylib), a Java binding for raylib. The project includes a tile-based map, player movement and wall collision, a minimap/2D map view, specular-lit textured raycast walls, and GLSL-powered dynamic lighting for the floor and ceiling.
 
 ## Requirements
 
@@ -40,7 +40,7 @@ The Java application is configured with the native-access option required by the
 | `G` | Toggle the centered 2D map view |
 | `T` | Toggle textured walls and shaded solid wall colors |
 
-The minimap is enabled by default. `G` switches between the centered 2D map and the raycasting view; in raycasting mode, `M` shows or hides the small map overlay. Walls use the brick texture by default; press `T` to switch to dynamically lit solid colors. The floor and ceiling are shaded per pixel by the fragment shader in `Assets/shaders/floor_ceiling.fs`.
+The minimap is enabled by default. `G` switches between the centered 2D map and the raycasting view; in raycasting mode, `M` shows or hides the small map overlay. Walls use the brick diffuse texture, its normal map in `Assets/Normal_maps/brickWall_normal.png`, and the specular shader in `Assets/shaders/specular.fs` by default. Normal-map intensity is controlled by `Settings.WALL_NORMAL_STRENGTH`. Press `T` to switch to dynamically lit solid colors. The floor and ceiling are shaded per pixel by the fragment shader in `Assets/shaders/floor_ceiling.fs`.
 
 ## Project layout
 
@@ -56,7 +56,7 @@ src/
   config/
     Settings.java        Display, map, movement, and raycasting settings
 Assets/
-  shaders/                GLSL floor and ceiling lighting shader
+  shaders/                GLSL floor/ceiling lighting and specular wall shaders
   textures/              Project textures
 ```
 

@@ -9,7 +9,7 @@ import static com.raylib.Raylib.KeyboardKey.KEY_D;
 import static com.raylib.Raylib.KeyboardKey.KEY_LEFT;
 import static com.raylib.Raylib.KeyboardKey.KEY_RIGHT;
 import static com.raylib.Raylib.KeyboardKey.KEY_S;
-import static com.raylib.Raylib.KeyboardKey.KEY_W; // 1. Added static import for drawTriangle
+import static com.raylib.Raylib.KeyboardKey.KEY_W; 
 import static com.raylib.Raylib.drawTriangle;
 import static com.raylib.Raylib.isKeyDown;
 import com.raylib.Vector2;
